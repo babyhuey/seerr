@@ -134,7 +134,7 @@ const SettingsMetadata = () => {
       }
 
       // In case of error without usable data
-      throw new Error('Failed to test connection');
+      throw new Error('Failed to test connection', { cause: error });
     }
   };
 
@@ -203,7 +203,7 @@ const SettingsMetadata = () => {
         }
       }
 
-      throw new Error('Failed to save Metadata settings');
+      throw new Error('Failed to save Metadata settings', { cause: error });
     }
   };
 
@@ -320,12 +320,14 @@ const SettingsMetadata = () => {
 
               addToast(intl.formatMessage(messages.metadataSettingsSaved), {
                 appearance: 'success',
+                autoDismiss: true,
               });
-            } catch (e) {
+            } catch {
               addToast(
                 intl.formatMessage(messages.failedToSaveMetadataSettings),
                 {
                   appearance: 'error',
+                  autoDismiss: true,
                 }
               );
             }
@@ -422,10 +424,11 @@ const SettingsMetadata = () => {
                                 ),
                                 {
                                   appearance: 'success',
+                                  autoDismiss: true,
                                 }
                               );
                             }
-                          } catch (e) {
+                          } catch {
                             addToast(
                               intl.formatMessage(messages.connectionTestFailed),
                               {

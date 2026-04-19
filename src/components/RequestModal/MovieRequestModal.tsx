@@ -125,7 +125,7 @@ const MovieRequestModal = ({
           { appearance: 'success', autoDismiss: true }
         );
       }
-    } catch (e) {
+    } catch {
       addToast(intl.formatMessage(messages.requesterror), {
         appearance: 'error',
         autoDismiss: true,
@@ -168,7 +168,7 @@ const MovieRequestModal = ({
           { appearance: 'success', autoDismiss: true }
         );
       }
-    } catch (e) {
+    } catch {
       setIsUpdating(false);
     }
   };
@@ -213,7 +213,7 @@ const MovieRequestModal = ({
       if (onComplete) {
         onComplete(MediaStatus.PENDING);
       }
-    } catch (e) {
+    } catch {
       addToast(<span>{intl.formatMessage(messages.errorediting)}</span>, {
         appearance: 'error',
         autoDismiss: true,
@@ -239,23 +239,23 @@ const MovieRequestModal = ({
           hasPermission(Permission.MANAGE_REQUESTS)
             ? updateRequest(true)
             : hasPermission(Permission.REQUEST_ADVANCED)
-            ? updateRequest()
-            : cancelRequest()
+              ? updateRequest()
+              : cancelRequest()
         }
         okDisabled={isUpdating}
         okText={
           hasPermission(Permission.MANAGE_REQUESTS)
             ? intl.formatMessage(messages.approve)
             : hasPermission(Permission.REQUEST_ADVANCED)
-            ? intl.formatMessage(messages.edit)
-            : intl.formatMessage(messages.cancel)
+              ? intl.formatMessage(messages.edit)
+              : intl.formatMessage(messages.cancel)
         }
         okButtonType={
           hasPermission(Permission.MANAGE_REQUESTS)
             ? 'success'
             : hasPermission(Permission.REQUEST_ADVANCED)
-            ? 'primary'
-            : 'danger'
+              ? 'primary'
+              : 'danger'
         }
         onSecondary={
           isOwner &&

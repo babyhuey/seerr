@@ -13,7 +13,7 @@ import notificationManager, { Notification } from '@server/lib/notifications';
 import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
 import logger from '@server/logger';
-import { DbAwareColumn } from '@server/utils/DbColumnHelper';
+import { DbAwareColumn, resolveDbType } from '@server/utils/DbColumnHelper';
 import { truncate } from 'lodash';
 import {
   AfterInsert,
@@ -21,10 +21,12 @@ import {
   AfterUpdate,
   Column,
   Entity,
+  Index,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   RelationCount,
+  UpdateDateColumn,
 } from 'typeorm';
 import Media from './Media';
 import SeasonRequest from './SeasonRequest';
@@ -34,7 +36,7 @@ export class RequestPermissionError extends Error {}
 export class QuotaRestrictedError extends Error {}
 export class DuplicateMediaRequestError extends Error {}
 export class NoSeasonsAvailableError extends Error {}
-export class BlacklistedMediaError extends Error {}
+export class BlocklistedMediaError extends Error {}
 
 type MediaRequestOptions = {
   isAutoRequest?: boolean;
@@ -149,14 +151,14 @@ export class MediaRequest {
         mediaType: requestBody.mediaType,
       });
     } else {
-      if (media.status === MediaStatus.BLACKLISTED) {
-        logger.warn('Request for media blocked due to being blacklisted', {
+      if (media.status === MediaStatus.BLOCKLISTED) {
+        logger.warn('Request for media blocked due to being blocklisted', {
           tmdbId: tmdbMedia.id,
           mediaType: requestBody.mediaType,
           label: 'Media Request',
         });
 
-        throw new BlacklistedMediaError('This media is blacklisted.');
+        throw new BlocklistedMediaError('This media is blocklisted.');
       }
 
       if (media.status === MediaStatus.UNKNOWN && !requestBody.is4k) {
@@ -526,18 +528,21 @@ export class MediaRequest {
   public id: number;
 
   @Column({ type: 'integer' })
+  @Index()
   public status: MediaRequestStatus;
 
   @ManyToOne(() => Media, (media) => media.requests, {
     eager: true,
     onDelete: 'CASCADE',
   })
+  @Index()
   public media: Media;
 
   @ManyToOne(() => User, (user) => user.requests, {
     eager: true,
     onDelete: 'CASCADE',
   })
+  @Index()
   public requestedBy: User;
 
   @ManyToOne(() => User, {
@@ -546,16 +551,13 @@ export class MediaRequest {
     eager: true,
     onDelete: 'SET NULL',
   })
+  @Index()
   public modifiedBy?: User;
 
   @DbAwareColumn({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   public createdAt: Date;
 
-  @DbAwareColumn({
-    type: 'datetime',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-  })
+  @UpdateDateColumn({ type: resolveDbType('datetime') })
   public updatedAt: Date;
 
   @Column({ type: 'varchar' })

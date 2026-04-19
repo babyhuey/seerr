@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+lcov.info
 
 # next.js
 /.next/
@@ -71,3 +72,6 @@ tsconfig.tsbuildinfo
 
 # Config Cache Directory
 config/cache
+
+# Docker compose
+compose.override.yaml
