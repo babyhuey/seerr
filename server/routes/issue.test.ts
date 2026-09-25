@@ -12,6 +12,7 @@ import * as issueRedownload from '@server/lib/issueRedownload';
 import { Permission } from '@server/lib/permissions';
 import { getSettings } from '@server/lib/settings';
 import { checkUser } from '@server/middleware/auth';
+import { IssueCommentSubscriber } from '@server/subscriber/IssueCommentSubscriber';
 import { IssueSubscriber } from '@server/subscriber/IssueSubscriber';
 import { setupTestDb } from '@server/test/db';
 import type { Express } from 'express';
@@ -36,6 +37,14 @@ const triggerRedownloadMock = mock.method(
   'triggerRedownload',
   async () => undefined
 ).mock;
+
+mock.method(
+  IssueCommentSubscriber.prototype as unknown as {
+    sendIssueCommentNotification: (...args: unknown[]) => Promise<void>;
+  },
+  'sendIssueCommentNotification',
+  async () => undefined
+);
 
 let app: Express;
 
@@ -111,7 +120,7 @@ describe('POST /issue', () => {
     const userRepo = getRepository(User);
     const media = await seedMedia();
     const friend = await userRepo.findOneOrFail({
-      where: { email: 'friend@seerr.dev' },
+      where: { email: 'demo@seerr.dev' },
     });
 
     const agent = await loginAs('admin@seerr.dev', 'test1234');
@@ -125,8 +134,8 @@ describe('POST /issue', () => {
     });
 
     assert.strictEqual(res.status, 201);
-    assert.strictEqual(res.body.createdBy.email, 'friend@seerr.dev');
-    assert.strictEqual(res.body.comments[0].user.email, 'friend@seerr.dev');
+    assert.strictEqual(res.body.createdBy.email, 'demo@seerr.dev');
+    assert.strictEqual(res.body.comments[0].user.email, 'demo@seerr.dev');
 
     const persisted = await issueRepo.findOneOrFail({
       where: { id: res.body.id },
@@ -155,13 +164,13 @@ describe('POST /issue', () => {
     const userRepo = getRepository(User);
     const media = await seedMedia();
     const friend = await userRepo.findOneOrFail({
-      where: { email: 'friend@seerr.dev' },
+      where: { email: 'demo@seerr.dev' },
     });
 
     friend.permissions = Permission.CREATE_ISSUES;
     await userRepo.save(friend);
 
-    const agent = await loginAs('friend@seerr.dev', 'test1234');
+    const agent = await loginAs('demo@seerr.dev', 'test1234');
     const res = await agent.post('/issue').send({
       issueType: IssueType.SUBTITLES,
       message: 'Subtitles are missing.',
@@ -170,15 +179,15 @@ describe('POST /issue', () => {
     });
 
     assert.strictEqual(res.status, 201);
-    assert.strictEqual(res.body.createdBy.email, 'friend@seerr.dev');
-    assert.strictEqual(res.body.comments[0].user.email, 'friend@seerr.dev');
+    assert.strictEqual(res.body.createdBy.email, 'demo@seerr.dev');
+    assert.strictEqual(res.body.comments[0].user.email, 'demo@seerr.dev');
   });
 
   it('prevents non-managers from supplying another userId', async () => {
     const userRepo = getRepository(User);
     const media = await seedMedia();
     const friend = await userRepo.findOneOrFail({
-      where: { email: 'friend@seerr.dev' },
+      where: { email: 'demo@seerr.dev' },
     });
     const admin = await userRepo.findOneOrFail({
       where: { email: 'admin@seerr.dev' },
@@ -187,7 +196,7 @@ describe('POST /issue', () => {
     friend.permissions = Permission.CREATE_ISSUES;
     await userRepo.save(friend);
 
-    const agent = await loginAs('friend@seerr.dev', 'test1234');
+    const agent = await loginAs('demo@seerr.dev', 'test1234');
     const res = await agent.post('/issue').send({
       issueType: IssueType.OTHER,
       message: 'Something else is wrong.',
@@ -224,7 +233,7 @@ async function seedIssue(overrides: Partial<Issue> = {}) {
   const issueRepo = getRepository(Issue);
 
   const createdBy = await userRepo.findOneOrFail({
-    where: { email: 'friend@seerr.dev' },
+    where: { email: 'demo@seerr.dev' },
   });
   const media = await mediaRepo.save(
     new Media({
@@ -257,7 +266,7 @@ async function seedIssue(overrides: Partial<Issue> = {}) {
 describe('POST /issue/:issueId/redownload', () => {
   it('returns 403 for a non-admin user', async () => {
     const issue = await seedIssue();
-    const agent = await loginAs('friend@seerr.dev', 'test1234');
+    const agent = await loginAs('demo@seerr.dev', 'test1234');
 
     const res = await agent.post(`/issue/${issue.id}/redownload`);
 
